@@ -8,6 +8,10 @@ ifeq (x86_64,$(AROS_TARGET_CPU))
 COMMON_FLAGS := -D__WORDSIZE=64
 DOJIT := yes
 endif
+ifeq (aarch64,$(AROS_TARGET_CPU))
+# Interpreted CPU core only. The JIT is x86 only.
+COMMON_FLAGS := -D__WORDSIZE=64
+endif
 ##ifeq (i386,$(AROS_TARGET_CPU))
 ##DOJIT := yes
 ##endif
@@ -23,6 +27,7 @@ endif
 #MM local-juae-emulator : local-juae-jit-$(AROS_TARGET_CPU)
 #MM local-juae-emulator : local-juae-icons-emulator
 
+#MM- local-juae-jit-aarch64 :
 #MM- local-juae-jit-i386 : local-juae-compemu
 #MM- local-juae-jit-x86_64 : local-juae-compemu
 

@@ -5,7 +5,7 @@ Working branch: `ccr-11844832-soh3di`.
 
 ## Current phase
 
-Phase 1 (hosted x86_64 baseline). Paused 2026-11-10 at Stevie's request. See decisions.
+Phase 3 (native AArch64 build). Started 2026-11-10 at Stevie's request. Phase 1 and 2 skipped for now, see decisions.
 
 ## Decisions by Stevie
 
@@ -50,3 +50,10 @@ Phase 1 (hosted x86_64 baseline). Paused 2026-11-10 at Stevie's request. See dec
 
 1. Stevie reads `docs/INVENTORY.md` and approves, or changes, the plan for Phase 1.
 2. Phase 1: a known-good build on hosted `linux-x86_64` AROS. Details depend on the answer to the question in the Gate 0 report.
+
+## Phase 3 log
+
+- 2026-11-10: Cross toolchain build for `raspi-aarch64` started in `/home/user/aros-build/build-pi` (GNU: binutils 2.40, gcc 6.5.0, the mainline default). Stevie has not yet said which AROS build is on the Pi, so toolchain match is unconfirmed.
+- Source tarballs for isl, gmp, mpfr, mpc come from `github.com/aros-development-team/external-sources` because the usual mirrors are blocked in this sandbox.
+- Code changes so far (not compiled for AArch64 yet): `sysdeps.h` knows AArch64; `read_processor_time` and `figure_processor_speed` use timer.device `ReadEClock` on AArch64 instead of x86 `rdtsc`/`cpuid`; `os_64bit` in `memory_aros.cpp`; `brk` instead of `int3` in SDL_Config; `mmakefile.src` sets `-D__WORDSIZE=64` for AArch64 and leaves the JIT off.
+- The x87 FPU code in `fpp.cpp` and the native-call code in `uaenative.cpp` are already guarded, so they should drop out. Not confirmed by compiling.

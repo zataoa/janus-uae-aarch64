@@ -172,7 +172,11 @@ Change it to double to increase the size of floats that you may use.
 #else /* probably GCC */
 
  #define CFG_COMPILER_GCC
+ #if defined(__aarch64__)
+ #define CFG_ASM_INT3 asm("brk #0");
+ #else
  #define CFG_ASM_INT3 asm("int3");
+ #endif
 
 #endif
 

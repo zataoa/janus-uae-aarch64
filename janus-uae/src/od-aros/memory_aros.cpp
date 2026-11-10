@@ -10,7 +10,7 @@
 #include "rommgr.h"
 #include "newcpu.h"
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__aarch64__)
 static int os_64bit = 1;
 #else
 static int os_64bit = 0;

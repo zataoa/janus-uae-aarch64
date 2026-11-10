@@ -1461,6 +1461,19 @@ void figure_processor_speed (void)
     if (freqset)
         return;
 
+#if defined(__aarch64__)
+    /* No rdtsc here. read_processor_time() uses timer.device ReadEClock(),
+     * so syncbase must come from the same clock. */
+    {
+        struct EClockVal ev;
+        ULONG efreq = ReadEClock(&ev);
+        write_log (_T("CLOCKFREQ: EClock %lu Hz\n"), (unsigned long) efreq);
+        syncbase = efreq >> 6;
+        freqset = 1;
+        return;
+    }
+#endif
+
     DebOut("figure_processor_speed called!\n");
     ProcessorBase=OpenResource(PROCESSORNAME);
     if(ProcessorBase)
@@ -1500,6 +1513,19 @@ void figure_processor_speed (void)
 frame_time_t read_processor_time (void) {
 
   unsigned long tsc_hi, tsc_lo=0;
+
+#if defined(__aarch64__)
+  /* Portable path: timer.device EClock, compressed the same way as the
+   * x86 TSC value (low 32 bits of count >> 6). */
+  {
+    struct EClockVal ev;
+    ReadEClock(&ev);
+    tsc_lo = (ULONG) ((ev.ev_lo >> 6) | (ev.ev_hi << 26));
+    if (!tsc_lo)
+      tsc_lo++;
+    return tsc_lo;
+  }
+#endif
 
 //#if defined(i386) || defined(x86_64)
   asm volatile ("cpuid\n"
