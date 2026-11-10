@@ -5,7 +5,12 @@ Working branch: `ccr-11844832-soh3di`.
 
 ## Current phase
 
-Phase 0 (Inventory). Finished. Waiting at **Gate 0** for Stevie's approval.
+Phase 1 (hosted x86_64 baseline). Started 2026-11-10.
+
+## Decisions by Stevie
+
+- 2026-11-10: Gate 0 passed. Phase 5 is a port of the Janus integration from `j-uae-1.x` onto the WinUAE core. The plain-window-only option is rejected.
+- Not yet decided: the vendor branch method for Phase 2 (recommended: new vendor branch from real WinUAE tags, joined to `master` once). Needs approval before Phase 2.
 
 ## Done
 
