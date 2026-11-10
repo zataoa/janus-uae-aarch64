@@ -53,6 +53,7 @@ Phase 3 (native AArch64 build). Started 2026-11-10 at Stevie's request. Phase 1 
 
 ## Phase 3 log
 
+- 2026-11-10: Stevie confirms the Pi image is 64-bit ("Piaros image"). Exact build date unknown.
 - 2026-11-10: Cross toolchain build for `raspi-aarch64` started in `/home/user/aros-build/build-pi` (GNU: binutils 2.40, gcc 6.5.0, the mainline default). Stevie has not yet said which AROS build is on the Pi, so toolchain match is unconfirmed.
 - Source tarballs for isl, gmp, mpfr, mpc come from `github.com/aros-development-team/external-sources` because the usual mirrors are blocked in this sandbox.
 - Code changes so far (not compiled for AArch64 yet): `sysdeps.h` knows AArch64; `read_processor_time` and `figure_processor_speed` use timer.device `ReadEClock` on AArch64 instead of x86 `rdtsc`/`cpuid`; `os_64bit` in `memory_aros.cpp`; `brk` instead of `int3` in SDL_Config; `mmakefile.src` sets `-D__WORDSIZE=64` for AArch64 and leaves the JIT off.
