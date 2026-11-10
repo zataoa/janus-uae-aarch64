@@ -32,15 +32,16 @@ BITS := $(shell getconf LONG_BIT)
 ifeq ($(BITS),64)
 # 64 bit
 CPU      = x86_64
-# AROS source svn
-SVN        = $(HOME)/tc/svn
-ABI        = v1.gcc.6.1
+ABI      ?= v1.gcc.6.1
 else
 # 32 bit
 CPU      = i386
-SVN        = $(HOME)/svn
-ABI        = v0
+ABI      ?= v0
 endif
+
+# Location of your AROS build. No default: pass it on the command line,
+# for example: make x86_64 SVN=$$HOME/aros-build
+SVN ?= $(error set SVN to the directory that holds your AROS build, for example make SVN=$$HOME/aros-build)
 
 # you have to adjust this of course..
 TARGET     = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/AROS/wuae
@@ -50,7 +51,7 @@ CC         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-gc
 AR         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ar
 LD         = $(SVN)/$(ABI)/AROS/bin/linux-$(CPU)/tools/crosstools/$(CPU)-aros-ld
 
-RELEASEDIR = $(HOME)/tc/releases
+RELEASEDIR ?= $(CURDIR)/release
 
 HOST_CC    = gcc
 
@@ -124,8 +125,6 @@ toolsclean:
 
 # ============== UAE ====================
 # Build with target compiler!
-
-SVN="/home/oli/tc/svn"
 
 uae:
 	@echo "PLEASE: use make x86_64 | i386 | m68k"

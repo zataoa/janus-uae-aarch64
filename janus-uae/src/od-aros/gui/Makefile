@@ -28,13 +28,14 @@ BITS := $(shell getconf LONG_BIT)
 ifeq ($(BITS),64)
 	# 64 bit
 	CPU      = x86_64
-	# AROS source svn
-	SVN        = /home/oli/tc/svn
 else
 	# 32 bit
 	CPU      = i386
-	SVN        = /home/oli/svn
 endif
+
+# Location of your AROS build. No default: pass it on the command line,
+# or let the parent Makefile pass it.
+SVN ?= $(error set SVN to the directory that holds your AROS build, for example make SVN=$$HOME/aros-build)
 
 
 OBJDIR     = obj/$(CPU)

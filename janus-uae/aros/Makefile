@@ -12,7 +12,7 @@
 
 CC        = i686-aros-gcc
 
-TARGETDIR = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/C/
+TARGETDIR ?= $(error set TARGETDIR to the C: drawer of your AROS tree)
 
 FLAGS     = -Wall
 #CDEFS     = 

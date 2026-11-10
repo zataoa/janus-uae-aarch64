@@ -48,7 +48,7 @@ LIBGUIOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/,$(LIBGUIFILES)))
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/.. -I$(GENDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/../../include -I$(AROS_CONTRIB_INCLUDES)
 USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 
-PERL:=/usr/bin/perl
+PERL ?= perl
 
 #MM local-juae-gui-obj : local-juae-gui-genmui local-juae-gui-png2c
 

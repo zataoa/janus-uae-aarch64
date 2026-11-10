@@ -12,7 +12,7 @@
 
 CC        = m68k-amigaos-gcc
 
-TARGETDIR = /home/oli/svn/aros/AROS/bin/linux-i386/AROS/m68k/
+TARGETDIR ?= $(error set TARGETDIR to the folder that should receive the m68k helpers)
 
 FLAGS     = -Wall
 CDEFS     = 
