@@ -14,20 +14,21 @@ The primary test machine is a Raspberry Pi 400 running native AArch64 AROS.
 ## 3. Repositories
 
 - **This repo:** Stevie's fork of `o11i/janus-uae` (GitHub user `zataoa`). All work happens here.
-- **Upstream Janus-UAE:** `https://github.com/o11i/janus-uae`. Original author Oliver Brunner. The `master` branch is Janus-UAE 2 (WinUAE-based). Other branches include `win-uae` (vendor branch of untouched WinUAE, last imported at 2.8.10), `j-uae-1.x`, `j-uae-1.1` and `p-uae`. Add as remote `upstream`.
+- **Upstream Janus-UAE:** `https://github.com/o11i/janus-uae`. Original author Oliver Brunner. The `master` branch is Janus-UAE 2 (WinUAE-based). Other branches include `win-uae` (vendor branch of untouched WinUAE; the branch holds 2.8.10 only), `j-uae-1.x`, `j-uae-1.1`, `p-uae` and `trunk` (same commit as `master`). The 3.2.0 import exists only as the tag `win-uae-3.2.0`, which is not on any branch and has no common history with `master`. `master` has no merge commits. Add as remote `upstream`. (Corrected after Phase 0.)
 - **WinUAE:** `https://github.com/tonioni/WinUAE`. Release tags are numeric (for example `6020`, `6030`). Add as remote `winuae`.
 - **AROS:** the mainline AROS source tree, plus its `contrib` and `ports` repositories. Claude Code must confirm the correct current repository locations before cloning, and confirm that the native Raspberry Pi AArch64 port is in mainline and which branch it lives on.
 - **Reference only, do not merge without a licence decision:** Amiberry (`https://github.com/BlitterStudio/amiberry`), GPL v3, WinUAE-based, has an ARM64 JIT.
 
 ## 4. Known facts about the starting point
 
-- The code base dates mainly from 2015 to 2019. The most recent upstream commit (August 2026) is a 10-line GUI fix in `src/od-aros/gui/mui_tree.cpp`.
+- The `master` history runs from 2009 to 2017, with one commit in 2019 and one in 2026. The core is WinUAE 3.2.0 (2015). The most recent upstream commit (August 2026) is a 10-line GUI fix in `src/od-aros/gui/mui_tree.cpp`. (Corrected after Phase 0.)
 - Source lives under `janus-uae/`. AROS-specific code is in `janus-uae/src/od-aros/`. There is an `mmakefile.src` for the AROS build system and a plain `Makefile` in `src/`.
-- Older build notes say: build inside a full AROS source tree with `contrib` built (libSDL came from contrib); several Makefiles hard-code `$HOME/projects` as the repo location; the Perl modules `Switch`, `Data::TreeDumper`, `List::MoreUtils` and `Tree::Simple` are required; the target was `make x86_64` for hosted linux-x86_64 AROS; the output binary was named `wuae`. Treat these notes as possibly out of date and verify each one.
+- Older build notes say: build inside a full AROS source tree with `contrib` built (libSDL came from contrib); the Makefiles hard-code `$(HOME)/tc/svn`, `$(HOME)/svn` and `/home/oli/...` for the AROS tree (no `$HOME/projects` was found; corrected after Phase 0); the Perl modules `Switch`, `Data::TreeDumper`, `List::MoreUtils` and `Tree::Simple` are required; the target was `make x86_64` for hosted linux-x86_64 AROS; the output binary was named `wuae` by the plain Makefiles and `J-UAE` by `mmakefile.src`. Treat these notes as possibly out of date and verify each one. (Phase 0 checked them; see the corrections above.)
 - Integration is split in two:
   - **AmigaOS side (m68k binaries, run inside the emulated Amiga, normally from `S:User-Startup`):** `janusd` (mouse sync, rootless/coherency mode), `clipd` (clipboard sync), `launchd` (start AmigaOS programs from Wanderer). These are m68k code and need no CPU porting, but must be rebuilt or verified if any host interface changes.
   - **AROS side:** the emulator itself plus `amirun`, which starts AmigaOS programs from an AROS shell.
-- The licence file is GPL v2. Whether the source headers say "version 2 only" or "version 2 or later" is not yet confirmed.
+- The licence file is GPL v2. The source headers are mixed (checked in Phase 0, see `docs/INVENTORY.md` section 9): files by the Janus author say GPL v3 or later; most WinUAE core files carry no licence text; some inherited files say v2 or later; the PearPC files in `src/ppc/` say v2 only.
+- `master` (Janus-UAE 2) does not contain the emulator side of the Janus integration. That code (`j-cli-thread.c`, `j-mouse.c`, `j-clipboard.c` and others) is only on `j-uae-1.x`, which is E-UAE based. `master` has the m68k helpers in `amiga/`, `amirun` in `aros/`, and clipboard stubs. Sound is also a stub. (Added after Phase 0.)
 - The existing JIT is x86 only.
 
 ## 5. Target platform facts (verify before relying on them)
