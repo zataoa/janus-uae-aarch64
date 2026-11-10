@@ -5,11 +5,13 @@ Working branch: `ccr-11844832-soh3di`.
 
 ## Current phase
 
-Phase 1 (hosted x86_64 baseline). Started 2026-11-10.
+Phase 1 (hosted x86_64 baseline). Paused 2026-11-10 at Stevie's request. See decisions.
 
 ## Decisions by Stevie
 
 - 2026-11-10: Gate 0 passed. Phase 5 is a port of the Janus integration from `j-uae-1.x` onto the WinUAE core. The plain-window-only option is rejected.
+- 2026-11-10: No testing on hosted AROS or in QEMU. Stevie tests only on the real Pi 400. The hosted AROS build was stopped part-way (toolchain stage) and is not needed for this. Hosted Gate 1 is dropped. Phase order to be confirmed.
+- 2026-11-10: Stevie needs a way to get files onto the Pi AROS machine over the network. Method not yet chosen.
 - Not yet decided: the vendor branch method for Phase 2 (recommended: new vendor branch from real WinUAE tags, joined to `master` once). Needs approval before Phase 2.
 
 ## Done
