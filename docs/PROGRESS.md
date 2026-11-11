@@ -58,3 +58,15 @@ Phase 3 (native AArch64 build). Started 2026-11-10 at Stevie's request. Phase 1 
 - Source tarballs for isl, gmp, mpfr, mpc come from `github.com/aros-development-team/external-sources` because the usual mirrors are blocked in this sandbox.
 - Code changes so far (not compiled for AArch64 yet): `sysdeps.h` knows AArch64; `read_processor_time` and `figure_processor_speed` use timer.device `ReadEClock` on AArch64 instead of x86 `rdtsc`/`cpuid`; `os_64bit` in `memory_aros.cpp`; `brk` instead of `int3` in SDL_Config; `mmakefile.src` sets `-D__WORDSIZE=64` for AArch64 and leaves the JIT off.
 - The x87 FPU code in `fpp.cpp` and the native-call code in `uaenative.cpp` are already guarded, so they should drop out. Not confirmed by compiling.
+- 2026-11-11: Toolchain built (aarch64-aros-gcc 6.5.0). SDK libraries built: z, png, lowlevel, mui, arossupport. SDL 1.2.15 built as a static lib. See `docs/BUILD.md`.
+- 2026-11-11: `janus-uae/src/Makefile.cross` compiles and links the whole emulator for AArch64 (`build-aarch64/J-UAE`, ELF64 AArch64, AROS ABI v1). Interpreted core, no JIT. NOT RUN YET. No QEMU test was done.
+- 2026-11-11: Test package `dist/J-UAE-aarch64-test1.zip` made for Stevie (test 1: does it start?).
+
+## Risks found in Phase 3 (from reading and compiling, not from running)
+
+- The FPU uses 64-bit `double`, not 80-bit. Results differ from x86 in the last bits. Some FPU software may notice.
+- `read_processor_time` now uses `ReadEClock`. Not checked on the Pi port.
+- Built with GCC 6.5.0. Stevie's Pi image may have been built with a different compiler (not known). Library names and ABI should still match, but this is unconfirmed.
+- The program opens `lowlevel.library`, `muimaster.library`, `png.library`, `cybergraphics.library` and others at start. Any of them missing on the Pi image will stop it. It also names `reqtools.library` and `gl.library` as strings. Not checked whether they are needed at start-up.
+- Sound is a stub. No Janus integration. These are not in this phase.
+- `tchar.h` now pre-includes standard headers before it redefines `wchar_t`. This works for the current AROS headers.
