@@ -1,0 +1,265 @@
+#
+# Cross build of Janus-UAE for native Raspberry Pi AArch64 AROS.
+#
+# Copyright 2026 Stevie (zataoa). New file.
+#
+# This file is part of Janus-UAE.
+#
+# Janus-UAE is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# Janus-UAE is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#---------------------------------------------------------------------
+# The host/target split is explicit in this file:
+#
+#   HOST   tools (build68k, gencpu, genblitter, genlinetoscr) are built
+#          with the host compiler and run on the build machine.
+#   TARGET code (the emulator and its libraries) is built with the
+#          AArch64 AROS cross compiler.
+#
+# Usage:
+#   make -f Makefile.cross AROS_BUILD=/path/to/aros/build-dir
+#
+# AROS_BUILD is the build directory of an AROS tree configured with
+#   configure --target=raspi-aarch64
+# and built far enough to have the cross compiler and the SDK in
+#   $(AROS_BUILD)/bin/raspi-aarch64/AROS/Developer
+#
+# SDL 1.2 is linked statically from $(SDK)/lib/libSDL.a.
+# The interpreted CPU core is used. There is no JIT.
+#---------------------------------------------------------------------
+
+AROS_BUILD ?= $(error set AROS_BUILD to your AROS build directory)
+# AROS source tree (for the OpenURL MUI header). Default: next to the build dir.
+AROS_SRC ?= $(AROS_BUILD)/../AROS
+
+SRC      := $(CURDIR)
+OUT      ?= $(SRC)/build-aarch64
+HOSTGEN  := $(OUT)/host
+GEN      := $(OUT)/gen
+OBJ      := $(OUT)/obj
+
+CROSS    := $(AROS_BUILD)/bin/linux-x86_64/tools/crosstools/aarch64-aros-
+SDK      := $(AROS_BUILD)/bin/raspi-aarch64/AROS/Developer
+TCC      := $(CROSS)gcc
+TCXX     := $(CROSS)g++
+TAR      := $(CROSS)ar
+
+HOST_CXX ?= g++
+PERL     ?= perl
+
+# ---------------------------------------------------------------- flags
+
+HOST_CXXFLAGS := -DCROSS_COMPILE -Wall -Wno-switch -fpermissive -g \
+                 -I$(HOSTGEN) -I$(SRC)/include -I$(SRC)
+
+TARGET_INCLUDES := -I$(GEN)/od-aros -I$(SRC)/od-aros -I$(GEN) -I$(GEN)/gui \
+                   -I$(SRC) -I$(SRC)/od-aros/include \
+                   -I$(SRC)/od-aros/gui -I$(SRC)/include \
+                   -I$(SRC)/archivers/zip -I$(SRC)/od-aros/libmpeg2/include \
+                   -I$(OUT)/mpeg2 -I$(SDK)/include/SDL -I$(SDK)/include \
+                   -idirafter $(AROS_SRC)/external/openurl/include
+
+TARGET_COMMON := -O2 -mcmodel=large -w -D__WORDSIZE=64
+TARGET_CXXFLAGS := $(TARGET_COMMON) -fexceptions $(TARGET_INCLUDES)
+TARGET_CFLAGS   := $(TARGET_COMMON) -std=gnu99 $(TARGET_INCLUDES)
+
+LIBS := -L$(OUT)/lib -L$(SDK)/lib -lgui -lSDL_Config -lSDL -lmpeg2convert \
+        -lmpeg2 -lpng -larossupport -lz -lmui -llowlevel \
+        $(shell $(TCC) -print-libgcc-file-name)
+
+# ---------------------------------------------------------------- sources
+
+AROSSRCS := aros thread cda_play aros_filesys main_aros avioutput unicode \
+	sound serial joystick mouse scaler_more arosgfx aros_scaler parser \
+	picasso96_aros options mman memory_aros writelog keymap shm posixemu \
+	sdlgfx sdlkeys_dik rp registry muigui_helper muigui extensions \
+	fsdb_aros nogui_aros hardfile_aros screenshot vm keyboard_aros stubs
+
+COMMONSRCS := a2065 a2091 akiko amax ar arcadia audio autoconf blitter \
+	blkdev blkdev_cdimage bsdsocket calc catweasel cd32_fmv \
+	cd32_fmv_genlock cdrom cdtv cdtvcr cfgfile cia consolehook cpummu \
+	cpummu30 cpuboard x86 crc32 custom debug def_icons devices disk \
+	diskutil dongle drawing driveclick enforcer epsonprinter ethernet \
+	events expansion fake86_cpu fdi2raw filesys flashrom fpp fsdb \
+	fsusage gayle gfxboard ide gfxutil hardfile hrtmon.rom identify \
+	idecontrollers inputdevice inputrecord keybuf main memory \
+	native2amiga ncr_scsi ncr9x_scsi newcpu newcpu_common rommgr \
+	readcpu sana2 savestate scsi scsitape scsiemul specialmonitors \
+	statusline test_card traps uaeexe uaeipc uaelib uaeresource \
+	uaeserial isofs pci zfile zfile_archive
+
+OTHERSRCS := archivers/zip/zip archivers/zip/ioapi archivers/mp2/kjmp2 \
+	qemuvga/cirrus_vga qemuvga/qemuuaeglue qemuvga/vga \
+	qemuvga/lsi53c895a qemuvga/lsi53c710 qemuvga/es1370 qemuvga/ne2000 \
+	qemuvga/esp mame/a2410 mame/tm34010/tms34010 \
+	dosbox/cmos dosbox/core_full dosbox/core_normal dosbox/core_simple \
+	dosbox/cpu dosbox/db_memory dosbox/flags dosbox/fpu dosbox/keyboard \
+	dosbox/modrm dosbox/paging dosbox/pic dosbox/timer ppc/ppc ppc/ppcd
+
+GENSRCS := blitfunc blittable cpudefs cpuemu_0 cpuemu_11 cpuemu_13 \
+	cpuemu_20 cpuemu_21 cpuemu_22 cpuemu_23 cpuemu_24 cpuemu_31 \
+	cpuemu_32 cpuemu_33 cpuemu_40 cpuemu_50 cpustbl
+
+GUISRCS := mui_class mui_data mui_dialog mui_file_request mui_head \
+	mui_listview mui_messagebox mui_tree mui_win combo cursor fs \
+	leftframe_class
+
+OBJS := $(addprefix $(OBJ)/od-aros/,$(addsuffix .o,$(AROSSRCS) sdl_gl_stubs aarch64_softld)) \
+        $(addprefix $(OBJ)/,$(addsuffix .o,$(COMMONSRCS) $(OTHERSRCS))) \
+        $(addprefix $(OBJ)/gen/,$(addsuffix .o,$(GENSRCS)))
+
+GUIOBJS := $(addprefix $(OBJ)/gui/,$(addsuffix .o,$(GUISRCS)))
+MPEG2SRCS := alloc cpu_accel cpu_state decode header idct motion_comp slice
+MPEG2OBJS := $(addprefix $(OBJ)/mpeg2/,$(addsuffix .o,$(MPEG2SRCS)))
+MPEG2CONVSRCS := rgb uyvy rgb_mmx
+MPEG2CONVOBJS := $(addprefix $(OBJ)/mpeg2/convert_,$(addsuffix .o,$(MPEG2CONVSRCS)))
+
+.PHONY: all hosttools generated clean
+all: $(OUT)/J-UAE
+
+# ------------------------------------------------------------ host tools
+
+hosttools: $(HOSTGEN)/build68k $(HOSTGEN)/gencpu $(HOSTGEN)/genblitter \
+           $(HOSTGEN)/genlinetoscr
+
+$(HOSTGEN)/sysconfig.h: $(SRC)/od-aros/sysconfig.h | $(HOSTGEN)
+	cp $< $@
+$(HOSTGEN)/tchar.h: $(SRC)/od-aros/tchar.h | $(HOSTGEN)
+	cp $< $@
+$(HOSTGEN)/target.h: $(SRC)/od-aros/target.h | $(HOSTGEN)
+	cp $< $@
+HOSTCFG := $(HOSTGEN)/sysconfig.h $(HOSTGEN)/tchar.h $(HOSTGEN)/target.h
+
+$(HOSTGEN)/build68k: $(SRC)/build68k.cpp $(SRC)/unix_missing.cpp $(HOSTCFG)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $(SRC)/build68k.cpp $(SRC)/unix_missing.cpp
+
+$(HOSTGEN)/genblitter: $(SRC)/genblitter.cpp $(SRC)/blitops.cpp $(HOSTCFG)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $(SRC)/genblitter.cpp $(SRC)/blitops.cpp
+
+$(HOSTGEN)/genlinetoscr: $(SRC)/genlinetoscr.cpp $(HOSTCFG)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $(SRC)/genlinetoscr.cpp
+
+# gencpu is linked with the generated cpudefs.cpp (host copy)
+$(HOSTGEN)/cpudefs.cpp: $(HOSTGEN)/build68k $(SRC)/table68k
+	$(HOSTGEN)/build68k < $(SRC)/table68k > $@
+
+$(HOSTGEN)/gencpu: $(SRC)/gencpu.cpp $(SRC)/missing.cpp $(SRC)/readcpu.cpp \
+                   $(HOSTGEN)/cpudefs.cpp $(HOSTCFG)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $(SRC)/gencpu.cpp $(SRC)/missing.cpp \
+	    $(SRC)/readcpu.cpp $(HOSTGEN)/cpudefs.cpp
+
+# ------------------------------------------------------ generated sources
+
+generated: $(GEN)/blit.h $(GEN)/blitfunc.cpp $(GEN)/blittable.cpp $(GEN)/cpuemu_0.cpp $(GEN)/linetoscr.cpp \
+           $(GEN)/cpudefs.cpp $(GEN)/string_resource.h $(GEN)/gui/mui_data.cpp
+
+$(GEN)/blit.h: $(HOSTGEN)/genblitter | $(GEN)
+	$< i > $@
+$(GEN)/blitfunc.h: $(HOSTGEN)/genblitter | $(GEN)
+	$< h > $@
+$(GEN)/blitfunc.cpp: $(HOSTGEN)/genblitter $(GEN)/blitfunc.h
+	$< f > $@
+$(GEN)/blittable.cpp: $(HOSTGEN)/genblitter $(GEN)/blitfunc.h
+	$< t > $@
+$(GEN)/linetoscr.cpp: $(HOSTGEN)/genlinetoscr | $(GEN)
+	$< > $@
+$(GEN)/cpudefs.cpp: $(HOSTGEN)/cpudefs.cpp | $(GEN)
+	cp $< $@
+
+# gencpu writes its output into the current directory
+$(GEN)/cpuemu_0.cpp: $(HOSTGEN)/gencpu | $(GEN)
+	cd $(GEN) && $(HOSTGEN)/gencpu
+
+# one gencpu run makes all of these
+GENCPUFILES := $(addprefix $(GEN)/,$(addsuffix .cpp,$(filter cpuemu_% cpustbl,$(GENSRCS))))
+$(filter-out $(GEN)/cpuemu_0.cpp,$(GENCPUFILES)): $(GEN)/cpuemu_0.cpp
+	@test -f $@ || (echo "gencpu did not produce $@"; false)
+
+$(GEN)/string_resource.h: $(SRC)/od-win32/resources/winuae.rc \
+                          $(SRC)/od-win32/resources/resource.h | $(GEN)
+	$(PERL) $(SRC)/od-aros/parse_res.pl $^ $@
+
+$(GEN)/gui/mui_data.cpp: $(SRC)/od-win32/resources/winuae.rc \
+                         $(SRC)/od-win32/resources/resource.h | $(GEN)/gui
+	$(PERL) $(SRC)/od-aros/gui/parse_fixed.pl $^ $@
+
+# ------------------------------------------------------- target compiling
+
+$(OBJ)/od-aros/%.o: $(SRC)/od-aros/%.cpp $(OBJ)/.stamp-gen
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -c $< -o $@
+
+$(OBJ)/gen/%.o: $(GEN)/%.cpp $(OBJ)/.stamp-gen
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -I$(HOSTGEN) -c $< -o $@
+
+$(OBJ)/gui/mui_data.o: $(GEN)/gui/mui_data.cpp
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -c $< -o $@
+
+$(OBJ)/gui/%.o: $(SRC)/od-aros/gui/%.cpp $(OBJ)/.stamp-gen
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -c $< -o $@
+
+$(OBJ)/%.o: $(SRC)/%.cpp $(OBJ)/.stamp-gen
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -c $< -o $@
+
+$(OBJ)/.stamp-gen: generated
+	@mkdir -p $(@D) && touch $@
+
+# libgui, SDL_Config
+$(OUT)/lib/libgui.a: $(GUIOBJS)
+	@mkdir -p $(@D)
+	$(TAR) rcs $@ $^
+
+$(OBJ)/od-aros/aarch64_softld.o: $(SRC)/od-aros/aarch64_softld.c
+	@mkdir -p $(@D)
+	$(TCC) $(TARGET_CFLAGS) -c $< -o $@
+
+$(OBJ)/od-aros/sdl_gl_stubs.o: $(SRC)/od-aros/sdl_gl_stubs.c
+	@mkdir -p $(@D)
+	$(TCC) $(TARGET_CFLAGS) -c $< -o $@
+
+$(OBJ)/sdlcfg/SDL_config.o: $(SRC)/od-aros/SDL_Config/SDL_config.c
+	@mkdir -p $(@D)
+	$(TCXX) $(TARGET_CXXFLAGS) -I$(SRC)/od-aros/SDL_Config -x c++ -c $< -o $@
+$(OUT)/lib/libSDL_Config.a: $(OBJ)/sdlcfg/SDL_config.o
+	@mkdir -p $(@D)
+	$(TAR) rcs $@ $^
+
+# libmpeg2 (generic C only; no configure, hand-made config.h)
+$(OUT)/mpeg2/config.h: $(SRC)/od-aros/libmpeg2/include/config.h.in
+	@mkdir -p $(@D)
+	printf '#define ATTRIBUTE_ALIGNED_MAX 64\n#define HAVE_INTTYPES_H 1\n#define STDC_HEADERS 1\n#define PACKAGE "libmpeg2"\n#define VERSION "0.5.1"\n' > $@
+$(OBJ)/mpeg2/%.o: $(SRC)/od-aros/libmpeg2/libmpeg2/%.c $(OUT)/mpeg2/config.h
+	@mkdir -p $(@D)
+	$(TCC) $(TARGET_CFLAGS) -DHAVE_CONFIG_H -I$(SRC)/od-aros/libmpeg2/libmpeg2 -c $< -o $@
+$(OBJ)/mpeg2/convert_%.o: $(SRC)/od-aros/libmpeg2/libmpeg2/convert/%.c $(OUT)/mpeg2/config.h
+	@mkdir -p $(@D)
+	$(TCC) $(TARGET_CFLAGS) -DHAVE_CONFIG_H -I$(SRC)/od-aros/libmpeg2/libmpeg2 -c $< -o $@
+$(OUT)/lib/libmpeg2.a: $(MPEG2OBJS)
+	@mkdir -p $(@D)
+	$(TAR) rcs $@ $^
+$(OUT)/lib/libmpeg2convert.a: $(MPEG2CONVOBJS)
+	@mkdir -p $(@D)
+	$(TAR) rcs $@ $^
+
+# ------------------------------------------------------------------ link
+
+$(OUT)/J-UAE: $(OBJS) $(OUT)/lib/libgui.a $(OUT)/lib/libSDL_Config.a \
+              $(OUT)/lib/libmpeg2.a $(OUT)/lib/libmpeg2convert.a
+	$(TCXX) -mcmodel=large -static-libstdc++ -o $@ $(OBJS) $(LIBS)
+
+$(HOSTGEN) $(GEN) $(GEN)/gui:
+	mkdir -p $@
+
+clean:
+	rm -rf $(OUT)

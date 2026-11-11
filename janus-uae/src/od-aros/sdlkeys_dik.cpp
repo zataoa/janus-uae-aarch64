@@ -20,6 +20,7 @@
 #include "keymap.h"
 
 #include "sdlgfx.h"
+#include <exec/types.h> /* the AROS SDL headers use CONST and IPTR */
 #include <SDL/SDL.h>
 #include "sdlkeys_dik.h"
 

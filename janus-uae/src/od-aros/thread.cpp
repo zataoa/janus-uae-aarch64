@@ -102,6 +102,7 @@ void uae_set_thread_priority (uae_thread_id *tid, int pri) {
 #endif
 
 #ifdef USE_SDL
+#include <exec/types.h> /* the AROS SDL headers use CONST and IPTR */
 #include <SDL/SDL.h>
 #include <SDL/SDL_thread.h>
 #endif

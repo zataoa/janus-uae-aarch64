@@ -160,7 +160,7 @@
 #else
 #define GUI_STATIC
 #endif
-static wstring szNone;
+static std::string szNone;
 
 static int allow_quit;
 static int restart_requested;
@@ -236,7 +236,7 @@ static int scsiromselectedcatnum = 0;
 
 #define Error(x) MessageBox (NULL, (x), _T("WinUAE Error"), MB_OK)
 
-wstring WIN32GUI_LoadUIString (DWORD id)
+std::string WIN32GUI_LoadUIString (DWORD id)
 {
 	wchar_t tmp[MAX_DPATH];
 	tmp[0] = 0;
@@ -255,7 +255,7 @@ void WIN32GUI_LoadUIString (DWORD id, TCHAR *string, DWORD dwStringLen)
 //#else
 #if 0
 
-wstring WIN32GUI_LoadUIString (TCHAR * id)
+std::string WIN32GUI_LoadUIString (TCHAR * id)
 {
 	wchar_t tmp[MAX_DPATH];
 	tmp[0] = 0;

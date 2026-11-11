@@ -113,7 +113,10 @@ HMODULE hInst = NULL;
 int _daylight=0; 
 int _dstbias=0 ;
 //long _timezone=0; 
+/* tzname is declared (and defined) by the AROS C library in current AROS */
+#if !defined(__AROS__)
 char tzname[2][4]={"PST", "PDT"};
+#endif
 
 /* win32.cpp stuff */
 int pissoff_value = 25000;
@@ -1325,7 +1328,12 @@ void WIN32_HandleRegistryStuff (void) {
  */
 static int freqset=0;
 
+#if defined(__i386__) || defined(__x86_64__)
 #include <cpuid.h>
+#else
+/* no CPUID outside x86: the callers below return early */
+#define __get_cpuid(...) 0
+#endif
 /*
  * see https://stackoverflow.com/questions/11706563/how-can-i-programmatically-find-the-cpu-frequency-with-c
  * and http://c9x.me/x86/html/file_module_x86_id_45.html
@@ -1355,6 +1363,11 @@ static int figure_processor_speed_cpuid (void) {
   char *foo;
   unsigned int mult;
   float f;
+
+#if !defined(__i386__) && !defined(__x86_64__)
+  /* no CPUID outside x86 */
+  return 0;
+#endif
 
 #if 0
   __get_cpuid(0, &eax, &ebx, &ecx, &edx);

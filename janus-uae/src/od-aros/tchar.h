@@ -149,6 +149,26 @@ ii
  */
 #ifndef _TCHAR_DEFINED
 #ifndef RC_INVOKED
+#if defined(__AROS__)
+/* The macros below turn wchar_t into char and fputws into fputs. Newer AROS
+ * and C++ library headers declare those names, so include them first. */
+#include <wchar.h>
+#include <wctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef __cplusplus
+#include <cwchar>
+#include <cwctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <list>
+#include <vector>
+#include <map>
+#endif
+#endif
 typedef char	TCHAR;
 #define wchar_t TCHAR
 #endif
